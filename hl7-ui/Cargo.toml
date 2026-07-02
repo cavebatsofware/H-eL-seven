@@ -1,0 +1,23 @@
+[package]
+name = "hl7-ui"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+dioxus = { version = "0.7.9" }
+dioxus-icons = { version = "0.1.0", default-features = false }
+dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false }
+hl7-engine = { path = "../hl7-engine" }
+hl7-gen = { path = "../hl7-gen" }
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Entropy for auto-created sample seeds (SystemTime is unavailable on wasm).
+js-sys = "0.3"
+
+[features]
+default = ["web"]
+web = ["dioxus/web"]
+desktop = ["dioxus/desktop"]

@@ -1,0 +1,23 @@
+[package]
+name = "hl7-serve"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "hl7-serve"
+path = "src/main.rs"
+
+[dependencies]
+axum = "0.8"
+axum-extra = { version = "0.12", features = ["cookie-signed"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal"] }
+tower = "0.5"
+tower-http = { version = "0.7", features = ["fs", "trace", "set-header"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "form", "rustls", "webpki-roots"] }
+basic-axum-rate-limit = "0.3"
+time = { version = "0.3", default-features = false }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde.workspace = true
+serde_json.workspace = true

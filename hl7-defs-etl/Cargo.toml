@@ -1,0 +1,11 @@
+[package]
+name = "hl7-defs-etl"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+hl7-engine = { path = "../hl7-engine" }
+serde.workspace = true
+serde_json.workspace = true
+ureq = { version = "2", features = ["json"] }

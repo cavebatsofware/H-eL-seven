@@ -1,0 +1,5 @@
+[application]
+name = "hl7-ui"
+
+[web.app]
+title = "HL7 -> JSON Visualizer"

@@ -1,0 +1,13 @@
+[package]
+name = "hl7-cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "hl7json"
+path = "src/main.rs"
+
+[dependencies]
+hl7-engine = { path = "../hl7-engine" }
+serde_json.workspace = true

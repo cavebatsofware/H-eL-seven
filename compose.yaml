@@ -1,0 +1,41 @@
+# Deploy hl7-ui. hl7-serve serves the static bundle, gates the defs JSON behind
+# Turnstile, and rate-limits per IP. It is published only on the host loopback
+# at 127.0.0.1:3900; the host's cloudflared routes that through the tunnel, so
+# the container is never exposed on a public interface.
+#
+# One-time setup:
+#   mkdir -p secrets
+#   printf '%s' 'YOUR_TURNSTILE_SECRET' > secrets/turnstile_secret
+#   openssl rand -base64 64             > secrets/hl7_cookie_key
+#   # populate defs/ with hl7-defs-etl before building (they are bundled)
+#
+# Run:
+#   docker compose up -d --build
+#
+# Then add an ingress entry to the host's cloudflared for the hl7 hostname
+# pointing at http://localhost:3900.
+
+services:
+  hl7-ui:
+    build: .
+    image: hl7-ui:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3900:8080" # loopback only; cloudflared forwards here
+    environment:
+      TURNSTILE_SITEKEY: "0xYOUR_SITEKEY" # public; safe to keep in the env
+      TURNSTILE_SECRET_FILE: /run/secrets/turnstile_secret
+      HL7_COOKIE_KEY_FILE: /run/secrets/hl7_cookie_key
+      HL7_IP_STRATEGY: cloudflare # trust CF-Connecting-IP from the tunnel
+      # HL7_RATE_RPM: "300"
+      # HL7_RATE_BLOCK_SECS: "900"
+      # HL7_CLEARANCE_HOURS: "12"
+    secrets:
+      - turnstile_secret
+      - hl7_cookie_key
+
+secrets:
+  turnstile_secret:
+    file: ./secrets/turnstile_secret
+  hl7_cookie_key:
+    file: ./secrets/hl7_cookie_key

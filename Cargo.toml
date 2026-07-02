@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = ["hl7-defs-etl", "hl7-engine", "hl7-cli", "hl7-gen", "hl7-ui", "hl7-serve"]
+
+[workspace.package]
+edition = "2021"
+license = "GPL-3.0-only"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"     # "z" for even smaller, sometimes slower runtime
+lto = true          # cross-crate dead-code elimination
+codegen-units = 1
+strip = true        # drop symbols
+panic = "abort"     # removes unwinding tables

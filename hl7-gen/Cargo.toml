@@ -1,0 +1,19 @@
+[package]
+name = "hl7-gen"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "hl7_gen"
+path = "src/lib.rs"
+
+[[bin]]
+name = "hl7gen"
+path = "src/main.rs"
+
+[dependencies]
+hl7-engine = { path = "../hl7-engine" }
+
+[dev-dependencies]
+serde_json.workspace = true
