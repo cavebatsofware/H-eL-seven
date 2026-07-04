@@ -26,7 +26,7 @@ pub fn InputScreen() -> Element {
     let converting = *state.converting.read();
     let error = state.convert_error.read().clone();
     let no_defs = defs_loader::available_versions().is_empty();
-    let messy = *state.messy.read();
+    let defect_rate = *state.defect_rate.read();
     let gen_report = state.gen_report.read().clone();
 
     // Turnstile gate: block conversion until the challenge is solved (or the
@@ -51,15 +51,26 @@ pub fn InputScreen() -> Element {
                         span { class: "editor-name", "message.hl7" }
                         div { class: "editor-actions",
                             label {
-                                class: "toggle",
-                                title: "Inject defects into ~1 of 3 generated samples \
-                                        (hl7gen --messy); the validator must flag them",
+                                class: "defect-rate",
+                                title: "Fraction of generated samples that get a known \
+                                        injected defect (hl7gen --messy). At 1.00 every \
+                                        sample is defective and the report below says what \
+                                        to expect; the validator must flag it.",
+                                "defect rate"
                                 input {
-                                    r#type: "checkbox",
-                                    checked: messy,
-                                    onchange: move |e| state.messy.set(e.checked()),
+                                    class: "defect-slider",
+                                    r#type: "range",
+                                    min: "0",
+                                    max: "1",
+                                    step: "0.05",
+                                    value: "{defect_rate}",
+                                    oninput: move |e| {
+                                        if let Ok(v) = e.value().parse::<f64>() {
+                                            state.defect_rate.set(v);
+                                        }
+                                    },
                                 }
-                                "Inject defects"
+                                span { class: "defect-value", "{defect_rate:.2}" }
                             }
                             // Deliberately NOT a <label> wrapper: a label
                             // click re-focuses the input and collapses any

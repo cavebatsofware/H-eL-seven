@@ -91,8 +91,9 @@ pub struct AppState {
     /// Seed field: used verbatim when filled; auto-created and displayed here
     /// when empty, so every sample is reproducible.
     pub seed_input: Signal<String>,
-    /// Generate samples with occasional injected defects (hl7-gen --messy).
-    pub messy: Signal<bool>,
+    /// Fraction of generated samples that get an injected defect, 0.0..=1.0
+    /// (hl7-gen --messy). 0 = always clean, 1 = every sample defective.
+    pub defect_rate: Signal<f64>,
     /// Defect report for the last generated sample (empty = clean).
     pub gen_report: Signal<Vec<String>>,
     /// Turnstile gate: `/api/config` has been consulted.
@@ -123,7 +124,7 @@ impl AppState {
             converting: Signal::new(false),
             sample_counter: Signal::new(0),
             seed_input: Signal::new(String::new()),
-            messy: Signal::new(false),
+            defect_rate: Signal::new(0.0),
             gen_report: Signal::new(Vec::new()),
             // Optimistic defaults: no gate until /api/config says otherwise.
             gate_ready: Signal::new(false),
@@ -242,9 +243,10 @@ impl AppState {
 
     /// Generate a message with hl7-gen -> returns the text, LF-separated for
     /// the textarea. The seed comes from the seed field (or is created) and
-    /// is written back to the field so the sample is reproducible. The messy
-    /// toggle injects defects into roughly a third of messages (like
-    /// `hl7gen --messy 0.35`); the injected-defect report lands in `gen_report`.
+    /// is written back to the field so the sample is reproducible. The defect
+    /// rate is passed straight through as `--messy`, so at 1.0 every sample is
+    /// defective and the report below the editor always says what to expect;
+    /// the injected-defect report lands in `gen_report`.
     async fn generate_sample_text(mut self) -> Result<String, String> {
         let defs = self.sample_defs().await?;
         let seed = self.resolve_seed()?;
@@ -254,7 +256,7 @@ impl AppState {
         }
         let event = &events[(seed as usize) % events.len()];
         let config = hl7_gen::Config {
-            messy: if *self.messy.read() { 0.35 } else { 0.0 },
+            messy: *self.defect_rate.read(),
             ..hl7_gen::Config::default()
         };
         let mut generator = hl7_gen::Generator::new(&defs, seed, config);

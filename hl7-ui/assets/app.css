@@ -345,6 +345,28 @@ code.chip {
     outline: none;
 }
 .seed-input::placeholder { color: var(--color-muted); opacity: 0.7; }
+.defect-rate {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-muted);
+    cursor: pointer;
+    user-select: none;
+}
+.defect-slider {
+    width: 96px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+.defect-value {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-text);
+    width: 3ch;
+    text-align: right;
+}
 textarea.editor {
     width: 100%;
     height: 280px;

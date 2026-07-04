@@ -197,7 +197,7 @@ impl<'d> Generator<'d> {
     /// first eligible segment of a group instance: without it, a group whose
     /// lead segment is optional (OBSERVATION = {OBX O, NTE O*}) can emit only
     /// trailing segments like NTE, which a greedy parser must attach to an
-    /// earlier slot - making the message ambiguous or structurally invalid.
+    /// earlier slot, making the message ambiguous or structurally invalid.
     fn walk(
         &mut self,
         items: &[StructureItem],
@@ -834,24 +834,30 @@ impl<'d> Generator<'d> {
                         return Some(d);
                     }
                 }
-                // Fields beyond the segment definition.
+                // Fields beyond the segment definition. Only a segment the defs
+                // actually define has a field count to exceed; appending to a
+                // Z-segment (or any undefined segment) is lossless positional
+                // data the engine keeps with an info note, not a detectable
+                // defect - so restrict the target to defined, non-MSH segments.
                 5 => {
-                    let idx = 1 + self.rng.range(lines.len().max(2) as u64 - 1) as usize;
-                    if let Some((line, id, _)) = lines.get_mut(idx) {
-                        if id != "MSH" {
-                            let def_len = self
-                                .defs
-                                .segments
-                                .get(id.as_str())
-                                .map(|d| d.fields.len())
-                                .unwrap_or(0);
-                            let current = line.split('|').count() - 1;
-                            let pad = def_len.saturating_sub(current) + 2;
-                            let id = id.clone();
-                            line.push_str(&"|".repeat(pad));
-                            line.push_str("EXTRA");
-                            return Some(format!("appended field beyond {id} definition"));
-                        }
+                    let candidates: Vec<usize> = lines
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, (_, id, _))| {
+                            id != "MSH" && self.defs.segments.contains_key(id.as_str())
+                        })
+                        .map(|(i, _)| i)
+                        .collect();
+                    if !candidates.is_empty() {
+                        let i = *self.rng.pick(&candidates);
+                        let id = lines[i].1.clone();
+                        let def_len = self.defs.segments[id.as_str()].fields.len();
+                        let line = &mut lines[i].0;
+                        let current = line.split('|').count() - 1;
+                        let pad = def_len.saturating_sub(current) + 2;
+                        line.push_str(&"|".repeat(pad));
+                        line.push_str("EXTRA");
+                        return Some(format!("appended field beyond {id} definition"));
                     }
                 }
                 _ => unreachable!(),

@@ -9,8 +9,8 @@ emits named, typed JSON suitable for Postgres JSONB storage and querying.
 ## Workspace
 
 - `hl7-defs-etl/` - scrapes HL7 specification definitions (trigger events,
-  segments, data types, tables) from the an API into a single
-  normalized JSON snapshot per version under `defs/`. 
+  segments, data types, tables) from an HL7-Definition API into a single
+  normalized JSON snapshot per version under `defs/`.
 - `hl7-engine/` - the library: syntactic parse -> structure bind -> typed decode ->
   validate -> JSON emit. Data-driven: one generic engine interpreting the
   definition snapshots, no per-message generated code.
@@ -29,9 +29,91 @@ emits named, typed JSON suitable for Postgres JSONB storage and querying.
   Definitions view browses each version's events, segments, data types, and
   tables. Snapshots are bundled as lazy-fetched assets by `build.rs`
   (a checkout without `defs/` still builds and shows a regenerate notice).
-  Run with `dx serve` from `hl7-ui/`; desktop needs the repo `shell.nix`
-  (`nix-shell --run "dx serve --package hl7-ui --desktop"`), and
-  `HL7_DEFS_DIR` points the desktop app at a snapshots directory on disk.
+  See [Running locally](#running-locally) to serve it.
+
+## Running locally
+
+Prerequisites: a recent stable Rust toolchain (via `rustup`). The command-line
+tools and tests need nothing else.
+
+The web and desktop UIs also need the Dioxus CLI (`dx`), a matching
+`wasm-bindgen`, and (for desktop) the WebKitGTK libraries. The repo ships a
+`shell.nix` that provides all of these, including the exact `wasm-bindgen`
+version the lockfile resolves (nixpkgs' `dioxus-cli` otherwise bundles an older
+one) and `binaryen` for release web builds:
+
+```sh
+nix-shell            # dev shell with dx, wasm-bindgen, webkitgtk, binaryen
+```
+
+Without Nix, install them yourself:
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo install dioxus-cli@0.7.9 --locked      # provides `dx`
+```
+
+The definition snapshots are committed under `defs/`, so nothing here requires
+network access to build or run.
+
+### Web UI
+
+```sh
+nix-shell --run "dx serve --package hl7-ui --web"
+```
+
+or, with `dx` already on your `PATH`, just `dx serve --package hl7-ui`. Open the
+localhost URL it prints. Conversion runs entirely client-side: the engine is
+compiled to wasm, so pasted messages never leave the browser. Paste a message or
+generate a sample from the input screen.
+
+### Command-line tools
+
+```sh
+# translate HL7 to JSON (reads a file, or stdin)
+cargo run -p hl7-cli -- message.hl7
+cargo run -p hl7-cli -- --compact < message.hl7
+
+# generate reproducible test messages (--seed makes a run repeatable)
+cargo run -p hl7-gen -- --count 10 --seed 1
+cargo run -p hl7-gen -- --count 3 --seed 5 --messy 1.0 --report
+
+# generate and translate in one pipe
+cargo run -p hl7-gen -- --count 10000 --seed 1 | cargo run -p hl7-cli -- --compact
+```
+
+To install them on `PATH` as `hl7json` and `hl7gen`:
+
+```sh
+cargo install --path hl7-cli
+cargo install --path hl7-gen
+```
+
+### Tests
+
+```sh
+cargo test --workspace
+```
+
+### Desktop app (optional)
+
+```sh
+nix-shell --run "dx serve --package hl7-ui --desktop"
+```
+
+The dev shell provides the WebKitGTK libraries the desktop build needs; without
+Nix, install `webkit2gtk`, `gtk3`, and `libsoup` yourself. `HL7_DEFS_DIR` points
+the desktop build at a snapshots directory on disk instead of the bundled
+assets.
+
+### Regenerating the definition snapshots (optional)
+
+The `defs/` files must be downloaded from a public api. Point `hl7-defs-etl`
+at an HL7-Definition API and list the versions:
+
+```sh
+HL7_DEFS_API_BASE=<api-base-url> cargo run -p hl7-defs-etl -- 2.5.1 2.8
+```
 
 ## License and terms
 
